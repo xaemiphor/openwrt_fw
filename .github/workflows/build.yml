@@ -90,7 +90,7 @@ jobs:
           export EXTRA_PKGS=$(awk '!/^#/{print $1}' custom.manifest | tr '\n' ' ')
           export PACKAGES=$(echo "${MANIFEST_PKGS:-} ${PROFILE_PKGS:-} ${EXTRA_PKGS:-}" | xargs -n1 | sort -u | xargs)
           echo "::group::make image"
-          make image PROFILE="${{ matrix.profile }}" EXTRA_IMAGE_NAME="${{ steps.vars.outputs.sha_short }}-${{ matrix.flavor }}" PACKAGES="${PACKAGES}" FILES=files/
+          make image PROFILE="${{ matrix.profile }}" EXTRA_IMAGE_NAME="${{ matrix.flavor }}-${{ steps.vars.outputs.sha_short }}" PACKAGES="${PACKAGES}" FILES=files/
           echo "::endgroup::"
           echo "::group::Results"
           find bin/targets/ -type f -iname "*${{ matrix.cpu }}*"
@@ -98,6 +98,6 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.openwrt_version }}-${{ steps.vars.outputs.sha_short }}-${{ matrix.flavor }}_${{ matrix.cpu }}-${{ matrix.platform }}_${{ matrix.profile }}
+          name: ${{ env.openwrt_version }}-${{ matrix.flavor }}-${{ steps.vars.outputs.sha_short }}-_${{ matrix.cpu }}-${{ matrix.platform }}_${{ matrix.profile }}
           path: "${{ env.tmp_dir }}/bin/targets/"
           retention-days: 1
