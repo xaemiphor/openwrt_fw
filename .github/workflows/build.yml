@@ -80,7 +80,7 @@ jobs:
           mkdir -p ${{ env.tmp_dir }}/{files,target}
           modified="false"
           # Copy modifications
-          for x in '/' "/${{ matrix.cpu }}/" "/${{ matrix.cpu }}-${{ matrix.platform }}/"; do
+          for x in '/' "/${{ matrix.cpu }}/" "/${{ matrix.cpu }}-${{ matrix.platform }}/" "/${{ matrix.cpu }}-${{ matrix.platform }}_${{ matrix.profile }}/"; do
             for y in 'files' 'target'; do
               if [[ -d "${{ github.workspace }}/flavors/${{ matrix.flavor }}${x}${y}" ]]; then
                 echo "::group::Importing ${{ matrix.flavor }}${x}${y}"
