@@ -76,9 +76,37 @@ jobs:
         shell: bash
         run: |
           set -x
-          touch ${{ env.tmp_dir }}/custom.manifest
+          touch ${{ env.tmp_dir }}/extra.manifest
           mkdir -p ${{ env.tmp_dir }}/{files,target}
-          echo "#TODO"
+          modified="false"
+          # Copy modifications
+          for x in '/' "${{ matrix.cpu }}/" "${{ matrix.cpu }}-${{ matrix.platform }}/"; do
+            for y in 'files' 'target'; do
+              if [[ -d "${{ github.workspace }}/flavors/${{ matrix.flavor }}/${x}${y}" ]]; then
+                echo "::group::Importing ${{ matrix.flavor }}/${x}${y}"
+                cp --recursive "${{ github.workspace }}/flavors/${{ matrix.flavor }}/${x}${y}/." "${{ env.tmp_dir }}/${y}/."
+                echo "::endgroup::"
+                modified="true"
+              fi
+            done
+            if [[ -e "${{ github.workspace }}/flavors/${{ matrix.flavor }}/${x}extra.manifest" ]]; then
+              echo "::group::Importing ${{ matrix.flavor }}/${x}extra.manifest"
+              cat "${{ github.workspace }}/flavors/${{ matrix.flavor }}/${x}extra.manifest" >> "${{ env.tmp_dir }}/extra.manifest"
+              modified="true"
+            fi
+          done
+          # Add custom repositories if defined
+          if [[ -e "${{ github.workspace }}/flavors/${{ matrix.flavor }}/repositories.conf" ]]; then
+            cat "${{ github.workspace }}/flavors/${{ matrix.flavor }}/repositories.conf" repositories.conf > repositories.conf.tmp && mv repositories.conf.tmp repositories.conf
+            if [[ ! -d "files/etc/opkg" ]]; then
+              mkdir -p "${{ env.tmp_dir }}/files/etc/opkg"
+            fi
+            cp "${{ github.workspace }}/flavors/${{ matrix.flavor }}/repositories.conf" "${{ env.tmp_dir }}/files/etc/opkg/customfeeds.conf"
+            modified="true"
+          fi
+          if [[ "${modified}" == "true" ]]; then
+            echo -e "REPO=${{ github.repository }}\nSHA=${GITHUB_SHA}\nSHA_SHORT=${{ steps.vars.outputs.sha_short }}\nRUN_NUM=${GITHUB_RUN_NUMBER}\nRUN_ID=${GITHUB_RUN_ID}\nCPU=${{ matrix.cpu }}\nPLATFORM=${{ matrix.platform }}\nPROFILE=${{ matrix.profile }}\nFLAVOR=${{ matrix.flavor }}\nOPENWRT_VERSION=${{ env.openwrt_version }}" > "${{ env.tmp_dir }}/files/build-custom"
+          fi
 
       - name: Build
         shell: bash
@@ -87,7 +115,7 @@ jobs:
           cd ${{ env.tmp_dir }}
           export MANIFEST_PKGS=$(awk '!/^#/{print $1}' openwrt.manifest | tr '\n' ' ')
           export PROFILE_PKGS=$(jq --arg profile generic -c --raw-output '.default_packages + .profiles[$profile].device_packages | sort | .[]' profiles.json | tr '\n' ' ')
-          export EXTRA_PKGS=$(awk '!/^#/{print $1}' custom.manifest | tr '\n' ' ')
+          export EXTRA_PKGS=$(awk '!/^#/{print $1}' extra.manifest | tr '\n' ' ')
           export PACKAGES=$(echo "${MANIFEST_PKGS:-} ${PROFILE_PKGS:-} ${EXTRA_PKGS:-}" | xargs -n1 | sort -u | xargs)
           echo "::group::make image"
           make image PROFILE="${{ matrix.profile }}" EXTRA_IMAGE_NAME="${{ matrix.flavor }}-${{ steps.vars.outputs.sha_short }}" PACKAGES="${PACKAGES}" FILES=files/
