@@ -126,6 +126,6 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.openwrt_version }}-${{ matrix.flavor }}-${{ steps.vars.outputs.sha_short }}-_${{ matrix.cpu }}-${{ matrix.platform }}_${{ matrix.profile }}
+          name: ${{ env.openwrt_version }}-${{ matrix.flavor }}-${{ steps.vars.outputs.sha_short }}_${{ matrix.cpu }}-${{ matrix.platform }}_${{ matrix.profile }}
           path: "${{ env.tmp_dir }}/bin/targets/"
           retention-days: 1
