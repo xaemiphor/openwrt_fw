@@ -1,0 +1,103 @@
+on:
+  workflow_dispatch:
+  push:
+
+env:
+  openwrt_version: '24.10.0'
+  tmp_dir: ${{ github.workspace }}/tmp
+
+jobs:
+  info:
+    runs-on: ubuntu-latest
+    outputs:
+      targets: "${{ steps.info.outputs.targets }}"
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@main
+        with:
+          fetch-depth: 1
+      - id: info
+        shell: bash
+        run: |
+          FLAVORS=$(ls -1 flavors/ | jq -R -s -c 'split("\n") | map(select(. != ""))')
+          TARGETS=$(yq -o json '.' .github/config/targets.yaml | jq -c -r '.')
+          MATRIX=$(jq -c -s '[.[0][] as $flavor | .[1][] | { flavor: $flavor } + .]' <(echo "${FLAVORS}") <(echo "${TARGETS}"))
+          echo "targets=${MATRIX}" | tee -a ${GITHUB_OUTPUT}
+  build:
+    runs-on: ubuntu-latest
+    needs: info
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.info.outputs.targets) }}
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@main
+        with:
+          fetch-depth: 1
+
+      - id: vars
+        shell: bash
+        run: |
+          BUILDER=$(curl -s https://downloads.openwrt.org/releases/${{ env.openwrt_version }}/targets/${{ matrix.cpu }}/${{ matrix.platform }}/ | awk '/-imagebuilder-${{ env.openwrt_version }}/' | sed -r 's/.*href="([^"]+).*/\1/g' )
+          MANIFEST=$(curl -s https://downloads.openwrt.org/releases/${{ env.openwrt_version }}/targets/${{ matrix.cpu }}/${{ matrix.platform }}/ | awk '/-${{ env.openwrt_version }}-.*.manifest/' | sed -r 's/.*href="([^"]+).*/\1/g' )
+          echo "sha_short=$(git rev-parse --short HEAD)" | tee -a "${GITHUB_OUTPUT}"
+          echo "builder_file=${BUILDER}" | tee -a "${GITHUB_OUTPUT}"
+          echo "builder_url=https://downloads.openwrt.org/releases/${{ env.openwrt_version }}/targets/${{ matrix.cpu }}/${{ matrix.platform }}/${BUILDER}" | tee -a "${GITHUB_OUTPUT}"
+          echo "manifest_url=https://downloads.openwrt.org/releases/${{ env.openwrt_version }}/targets/${{ matrix.cpu }}/${{ matrix.platform }}/${MANIFEST}" | tee -a "${GITHUB_OUTPUT}"
+          echo "profiles_url=https://downloads.openwrt.org/releases/${{ env.openwrt_version }}/targets/${{ matrix.cpu }}/${{ matrix.platform }}/profiles.json" | tee -a "${GITHUB_OUTPUT}"
+
+      - name: Cache Imagebuilder
+        id: cache-imagebuilder
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.vars.outputs.builder_file }}
+          key: ${{ steps.vars.outputs.builder_file }}
+
+      - name: Download Imagebuilder
+        if: steps.cache-imagebuilder.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          wget -q -c "${{ steps.vars.outputs.builder_url }}" -O "${{ steps.vars.outputs.builder_file }}" 
+
+      - name: Prep env
+        shell: bash
+        env:
+          BUILDER_FILE: ${{ steps.vars.outputs.builder_file }}
+        run: |
+          set -x
+          mkdir -p ${{ env.tmp_dir }}
+          cd ${{ env.tmp_dir }}
+          if [[ ! -s openwrt.manifest ]]; then wget -q "${{ steps.vars.outputs.manifest_url }}" -O openwrt.manifest ; fi
+          if [[ ! -s profiles.json ]]; then wget -q "${{ steps.vars.outputs.profiles_url }}" -O profiles.json ; fi
+          tar --strip-components=1 -xf "${{ github.workspace }}/${BUILDER_FILE}" "${BUILDER_FILE%.*.*}/"
+
+      - name: Prep mods
+        shell: bash
+        run: |
+          set -x
+          touch ${{ env.tmp_dir }}/custom.manifest
+          mkdir -p ${{ env.tmp_dir }}/{files,target}
+          echo "#TODO"
+
+      - name: Build
+        shell: bash
+        run: |
+          set -x
+          cd ${{ env.tmp_dir }}
+          export MANIFEST_PKGS=$(awk '!/^#/{print $1}' openwrt.manifest | tr '\n' ' ')
+          export PROFILE_PKGS=$(jq --arg profile generic -c --raw-output '.default_packages + .profiles[$profile].device_packages | sort | .[]' profiles.json | tr '\n' ' ')
+          export EXTRA_PKGS=$(awk '!/^#/{print $1}' custom.manifest | tr '\n' ' ')
+          export PACKAGES=$(echo "${MANIFEST_PKGS:-} ${PROFILE_PKGS:-} ${EXTRA_PKGS:-}" | xargs -n1 | sort -u | xargs)
+          echo "::group::make image"
+          make image PROFILE="${{ matrix.profile }}" EXTRA_IMAGE_NAME="${{ steps.vars.outputs.sha_short }}-${{ matrix.flavor }}" PACKAGES="${PACKAGES}" FILES=files/
+          echo "::endgroup::"
+          echo "::group::Results"
+          find bin/targets/ -type f -iname "*${{ matrix.cpu }}*"
+          echo "::endgroup::"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.openwrt_version }}-${{ steps.vars.outputs.sha_short }}-${{ matrix.flavor }}_${{ matrix.cpu }}-${{ matrix.platform }}_${{ matrix.profile }}
+          path: "${{ env.tmp_dir }}/bin/targets/"
+          retention-days: 1
