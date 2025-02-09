@@ -80,18 +80,18 @@ jobs:
           mkdir -p ${{ env.tmp_dir }}/{files,target}
           modified="false"
           # Copy modifications
-          for x in '/' "${{ matrix.cpu }}/" "${{ matrix.cpu }}-${{ matrix.platform }}/"; do
+          for x in '/' "/${{ matrix.cpu }}/" "/${{ matrix.cpu }}-${{ matrix.platform }}/"; do
             for y in 'files' 'target'; do
-              if [[ -d "${{ github.workspace }}/flavors/${{ matrix.flavor }}/${x}${y}" ]]; then
-                echo "::group::Importing ${{ matrix.flavor }}/${x}${y}"
-                cp --recursive "${{ github.workspace }}/flavors/${{ matrix.flavor }}/${x}${y}/." "${{ env.tmp_dir }}/${y}/."
+              if [[ -d "${{ github.workspace }}/flavors/${{ matrix.flavor }}${x}${y}" ]]; then
+                echo "::group::Importing ${{ matrix.flavor }}${x}${y}"
+                cp --recursive "${{ github.workspace }}/flavors/${{ matrix.flavor }}${x}${y}/." "${{ env.tmp_dir }}/${y}/."
                 echo "::endgroup::"
                 modified="true"
               fi
             done
-            if [[ -e "${{ github.workspace }}/flavors/${{ matrix.flavor }}/${x}extra.manifest" ]]; then
-              echo "::group::Importing ${{ matrix.flavor }}/${x}extra.manifest"
-              cat "${{ github.workspace }}/flavors/${{ matrix.flavor }}/${x}extra.manifest" >> "${{ env.tmp_dir }}/extra.manifest"
+            if [[ -e "${{ github.workspace }}/flavors/${{ matrix.flavor }}${x}extra.manifest" ]]; then
+              echo "::group::Importing ${{ matrix.flavor }}${x}extra.manifest"
+              cat "${{ github.workspace }}/flavors/${{ matrix.flavor }}${x}extra.manifest" >> "${{ env.tmp_dir }}/extra.manifest"
               modified="true"
             fi
           done
