@@ -41,11 +41,13 @@ jobs:
         run: |
           BUILDER=$(curl -s https://downloads.openwrt.org/releases/${{ env.openwrt_version }}/targets/${{ matrix.cpu }}/${{ matrix.platform }}/ | awk '/-imagebuilder-${{ env.openwrt_version }}/' | sed -r 's/.*href="([^"]+).*/\1/g' )
           MANIFEST=$(curl -s https://downloads.openwrt.org/releases/${{ env.openwrt_version }}/targets/${{ matrix.cpu }}/${{ matrix.platform }}/ | awk '/-${{ env.openwrt_version }}-.*.manifest/' | sed -r 's/.*href="([^"]+).*/\1/g' )
+          FLAVOR_VERSION=$(cat flavors/${{ matrix.flavor }}/version)
           echo "sha_short=$(git rev-parse --short HEAD)" | tee -a "${GITHUB_OUTPUT}"
           echo "builder_file=${BUILDER}" | tee -a "${GITHUB_OUTPUT}"
           echo "builder_url=https://downloads.openwrt.org/releases/${{ env.openwrt_version }}/targets/${{ matrix.cpu }}/${{ matrix.platform }}/${BUILDER}" | tee -a "${GITHUB_OUTPUT}"
           echo "manifest_url=https://downloads.openwrt.org/releases/${{ env.openwrt_version }}/targets/${{ matrix.cpu }}/${{ matrix.platform }}/${MANIFEST}" | tee -a "${GITHUB_OUTPUT}"
           echo "profiles_url=https://downloads.openwrt.org/releases/${{ env.openwrt_version }}/targets/${{ matrix.cpu }}/${{ matrix.platform }}/profiles.json" | tee -a "${GITHUB_OUTPUT}"
+          echo "flavor_version=${FLAVOR_VERSION:-0.0.0}" | tee -a "${GITHUB_OUTPUT}"
 
       - name: Cache Imagebuilder
         id: cache-imagebuilder
@@ -105,7 +107,7 @@ jobs:
             modified="true"
           fi
           if [[ "${modified}" == "true" ]]; then
-            echo -e "REPO=${{ github.repository }}\nSHA=${GITHUB_SHA}\nSHA_SHORT=${{ steps.vars.outputs.sha_short }}\nRUN_NUM=${GITHUB_RUN_NUMBER}\nRUN_ID=${GITHUB_RUN_ID}\nCPU=${{ matrix.cpu }}\nPLATFORM=${{ matrix.platform }}\nPROFILE=${{ matrix.profile }}\nFLAVOR=${{ matrix.flavor }}\nOPENWRT_VERSION=${{ env.openwrt_version }}" > "${{ env.tmp_dir }}/files/build-custom"
+            echo -e "REPO=${{ github.repository }}\nSHA=${GITHUB_SHA}\nSHA_SHORT=${{ steps.vars.outputs.sha_short }}\nRUN_NUM=${GITHUB_RUN_NUMBER}\nRUN_ID=${GITHUB_RUN_ID}\nCPU=${{ matrix.cpu }}\nPLATFORM=${{ matrix.platform }}\nPROFILE=${{ matrix.profile }}\nFLAVOR=${{ matrix.flavor }}\nOPENWRT_VERSION=${{ env.openwrt_version }}\nFLAVOR_VERSION=${{ steps.vars.outputs.flavor_version }}" > "${{ env.tmp_dir }}/files/build-custom"
           fi
 
       - name: Build
@@ -118,7 +120,7 @@ jobs:
           export EXTRA_PKGS=$(awk '!/^#/{print $1}' extra.manifest | tr '\n' ' ')
           export PACKAGES=$(echo "${MANIFEST_PKGS:-} ${PROFILE_PKGS:-} ${EXTRA_PKGS:-}" | xargs -n1 | sort -u | xargs)
           echo "::group::make image"
-          make image PROFILE="${{ matrix.profile }}" EXTRA_IMAGE_NAME="${{ matrix.flavor }}-${{ steps.vars.outputs.sha_short }}" PACKAGES="${PACKAGES}" FILES=files/
+          make image PROFILE="${{ matrix.profile }}" EXTRA_IMAGE_NAME="${{ matrix.flavor }}-${{ steps.vars.outputs.flavor_version }}-${{ steps.vars.outputs.sha_short }}" PACKAGES="${PACKAGES}" FILES=files/
           echo "::endgroup::"
           echo "::group::Results"
           find bin/targets/ -type f -iname "*${{ matrix.cpu }}*"
@@ -126,6 +128,6 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.openwrt_version }}-${{ matrix.flavor }}-${{ steps.vars.outputs.sha_short }}_${{ matrix.cpu }}-${{ matrix.platform }}_${{ matrix.profile }}
+          name: ${{ env.openwrt_version }}-${{ matrix.flavor }}-${{ steps.vars.outputs.flavor_version }}-${{ steps.vars.outputs.sha_short }}_${{ matrix.cpu }}-${{ matrix.platform }}_${{ matrix.profile }}
           path: "${{ env.tmp_dir }}/bin/targets/"
           retention-days: 1
