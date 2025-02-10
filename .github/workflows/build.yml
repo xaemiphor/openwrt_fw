@@ -20,7 +20,7 @@ jobs:
         shell: bash
         run: |
           FLAVORS=$(ls -1 flavors/ | jq -R -s -c 'split("\n") | map(select(. != ""))')
-          TARGETS=$(yq -o json '.' .github/config/targets.yaml | jq -c -r '.')
+          TARGETS=$(yq -o json '.' .github/config/targets.yaml | jq -c -r '[.[]|select(.enabled!=false)]')
           MATRIX=$(jq -c -s '[.[0][] as $flavor | .[1][] | { flavor: $flavor } + .]' <(echo "${FLAVORS}") <(echo "${TARGETS}"))
           echo "targets=${MATRIX}" | tee -a ${GITHUB_OUTPUT}
   build:

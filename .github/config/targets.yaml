@@ -1,8 +1,8 @@
 - { cpu: "ath79", platform: "generic", profile: "tplink_archer-c7-v2" }
 - { cpu: "ath79", platform: "nand", profile: "glinet_gl-ar750s-nor" }
 - { cpu: "ath79", platform: "nand", profile: "glinet_gl-ar750s-nor-nand" }
-- { cpu: "bcm27xx", platform: "bcm2708", profile: "rpi" }
-- { cpu: "bcm27xx", platform: "bcm2709", profile: "rpi-2" }
+- { cpu: "bcm27xx", platform: "bcm2708", profile: "rpi", enabled: false }
+- { cpu: "bcm27xx", platform: "bcm2709", profile: "rpi-2", enabled: false }
 - { cpu: "bcm27xx", platform: "bcm2710", profile: "rpi-3" }
 - { cpu: "bcm27xx", platform: "bcm2711", profile: "rpi-4" }
 - { cpu: "bcm27xx", platform: "bcm2712", profile: "rpi-5" }
