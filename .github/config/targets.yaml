@@ -2,6 +2,10 @@
 - { cpu: "ath79", platform: "nand", profile: "glinet_gl-ar750s-nor" }
 - { cpu: "ath79", platform: "nand", profile: "glinet_gl-ar750s-nor-nand" }
 - { cpu: "bcm27xx", platform: "bcm2708", profile: "rpi" }
+- { cpu: "bcm27xx", platform: "bcm2709", profile: "rpi-2" }
+- { cpu: "bcm27xx", platform: "bcm2710", profile: "rpi-3" }
+- { cpu: "bcm27xx", platform: "bcm2711", profile: "rpi-4" }
+- { cpu: "bcm27xx", platform: "bcm2712", profile: "rpi-5" }
 - { cpu: "mvebu", platform: "cortexa9", profile: "linksys_wrt32x" }
 - { cpu: "ramips", platform: "mt7621", profile: "glinet_gl-mt1300" }
 - { cpu: "x86", platform: "64", profile: "generic" }
