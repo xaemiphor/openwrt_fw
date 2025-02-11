@@ -1,11 +1,15 @@
 # Supporting USB storage
+blkid
 block-mount
 cryptsetup
 e2fsprogs
+fdisk
 kmod-fs-exfat
 kmod-fs-ext4
 kmod-fs-f2fs
+kmod-fs-isofs
 kmod-fs-ntfs3
+kmod-fs-vfat
 kmod-usb-storage
 kmod-usb-storage-uas
 kmod-usb2
