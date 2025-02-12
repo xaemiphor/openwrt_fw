@@ -174,8 +174,8 @@ jobs:
       - name: Git checkout
         uses: actions/checkout@main
         with:
-          fetch-depth: 1
-          ref: HEAD
+          fetch-depth: 0
+          ref: ${{ github.ref_name }}
 
       - shell: bash
         run: |
@@ -199,14 +199,23 @@ jobs:
       - name: Download all workflow run artifacts
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
+          path: results
           pattern: ${{ env.openwrt_version }}-${{ matrix.flavor }}-*
           merge-multiple: true
 
       - name: Debug
         shell: bash
         run: |
-          find artifacts
+          echo "::group::results"
+          find results
+          echo "::endgroup::"
+          mkdir artifacts
+          find results/ -type f -name 'openwrt-*' -exec mv {} ${{ github.workspace }}/artifacts \;
+          find results/ -type f -name 'sha256sums' -exec cat {} \; | grep -v 'profiles.json' > artifacts/sha256sums
+          find results/ -type f -name 'profiles.json' -exec cat {} \; | jq -r -c -s '.' > artifacts/profiles.json
+          echo "::group::artifacts"
+          find  artifacts
+          echo "::endgroup::"
 
       - name: Release
         uses: softprops/action-gh-release@v2
