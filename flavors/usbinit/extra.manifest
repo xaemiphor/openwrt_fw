@@ -2,8 +2,10 @@
 blkid
 block-mount
 cryptsetup
+dosfstools
 e2fsprogs
 fdisk
+hdparm
 kmod-fs-exfat
 kmod-fs-ext4
 kmod-fs-f2fs
@@ -16,4 +18,5 @@ kmod-usb2
 kmod-usb3
 luci-app-hd-idle
 mount-utils
+parted
 usbutils

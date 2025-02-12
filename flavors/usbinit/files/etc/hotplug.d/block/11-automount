@@ -1,0 +1,12 @@
+#!/bin/sh /etc/rc.common
+if [ "${ACTION}" = "add" ] && [ "${DEVTYPE}" = "partition" ]; then
+	EXISTING=$(findmnt -n -o TARGET -S /dev/${DEVNAME})
+	[ -n "${EXISTING}" ] && exit 0 # Device is already mounted, do nothing
+	[ ! -e "/mnt/${DEVNAME}" ] && mkdir -p "/mnt/${DEVNAME}"
+	if ! mountpoint -q /mnt/${DEVNAME}; then
+		mount -o sync,noatime,nodiratime /dev/${DEVNAME} /mnt/${DEVNAME}
+	fi
+fi
+if [ "${ACTION}" = "remove" ]; then
+	umount /mnt/${DEVNAME}*
+fi
