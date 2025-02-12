@@ -167,6 +167,7 @@ jobs:
       - build
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         flavor: ${{ fromJSON(needs.info.outputs.flavors) }}
     steps:
@@ -174,6 +175,7 @@ jobs:
         uses: actions/checkout@main
         with:
           fetch-depth: 1
+          ref: HEAD
 
       - shell: bash
         run: |
