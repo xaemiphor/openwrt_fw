@@ -69,7 +69,6 @@ jobs:
         run: |
           BUILDER=$(curl -s https://downloads.openwrt.org/releases/${{ env.openwrt_version }}/targets/${{ matrix.cpu }}/${{ matrix.platform }}/ | awk '/-imagebuilder-${{ env.openwrt_version }}/' | sed -r 's/.*href="([^"]+).*/\1/g' )
           MANIFEST=$(curl -s https://downloads.openwrt.org/releases/${{ env.openwrt_version }}/targets/${{ matrix.cpu }}/${{ matrix.platform }}/ | awk '/-${{ env.openwrt_version }}-.*.manifest/' | sed -r 's/.*href="([^"]+).*/\1/g' )
-          FLAVOR_VERSION_FILE=$(cat flavors/${{ matrix.flavor }}/version)
           FLAVOR_VERSION="${{ steps.semantic.outputs.new_release_version }}"
           echo "sha_short=$(git rev-parse --short HEAD)" | tee -a "${GITHUB_OUTPUT}"
           echo "builder_file=${BUILDER}" | tee -a "${GITHUB_OUTPUT}"
